@@ -78,6 +78,10 @@ RECEIVER_EMAIL = os.environ.get("RECEIVER_EMAIL", "")
 YD_EMAIL = os.environ.get("YD_EMAIL", "")
 YD_APP_PWD = os.environ.get("YD_APP_PWD", "")  # yandex mail 使用第三方 APP 授权码
 
+# Server 酱(ServerChan) https://sct.ftqq.com
+# 免费额度: 每天最多发送 5 条, 卡片仅显示标题, 每天 API 最大请求 1000 次, 每分钟最多发送 5 条.
+SERVER_CHAN_SENDKEY = os.environ.get("SERVER_CHAN_SENDKEY", "")  # Server 酱的 SENDKEY，无需推送可忽略
+
 # Magic internet access
 PROXIES = {"http": "http://127.0.0.1:10808", "https": "http://127.0.0.1:10808"}
 
@@ -446,6 +450,7 @@ def telegram():
         print("Telegram Bot 推送成功")
 
 
+# Yandex mail notification
 def send_mail_by_yandex(
     to_email, from_email, subject, text, files, sender_email, sender_password
 ):
@@ -473,6 +478,7 @@ def send_mail_by_yandex(
         s.close()
 
 
+# eMail push
 def email():
     msg = "EUserv 续费日志\n\n" + desp
     try:
@@ -486,6 +492,19 @@ def email():
     except SMTPDataError as e1:
         print(str(e1))
         print("eMail 推送失败")
+
+
+# Server酱 https://sct.ftqq.com
+def server_chan():
+    data = {
+        "title": "EUserv 续费日志",
+        "desp": desp
+    }
+    response = requests.post(f"https://sctapi.ftqq.com/{SERVER_CHAN_SENDKEY}.send", data=data)
+    if response.status_code != 200:
+        print('Server 酱推送失败')
+    else:
+        print('Server 酱推送成功')
 
 
 def main_handler(event, context):
@@ -524,6 +543,7 @@ def main_handler(event, context):
 
     TG_BOT_TOKEN and TG_USER_ID and TG_API_HOST and telegram()
     RECEIVER_EMAIL and YD_EMAIL and YD_APP_PWD and email()
+    SERVER_CHAN_SENDKEY and server_chan()
 
     print("*" * 30)
 
