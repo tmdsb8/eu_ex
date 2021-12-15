@@ -76,15 +76,15 @@ The effect is as shown,
 ## TODO
 
 - [x] ~~Validate the `receiver` field parsed by mailparser to reduce malicious email interference.~~ Won't do due to mailparser *Inbox Settings - Email Reception*.
-- [ ] Open pre-trained models to solve the problem of CAPTCHA recognition locally.
-- [ ] Log internationalization and localization.
+- [ ] Open pre-trained models to solve the problem of CAPTCHA recognition locally when the CAPTCHA solver API is not working.
+- [x] Log internationalization and localization.
 
 ## Acknowledgement
 
 - Thanks EUserv provides us free IPv6 VPS for learning.
 - Thanks CokeMine & its repository contributors provides us the original *EUserv_extend* script .The internet never forgets, but people do.
 
-## Q&A
+## FAQs
 
 1. **Q**: It can be non-gmail mailbox?
 

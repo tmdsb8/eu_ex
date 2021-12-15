@@ -25,8 +25,13 @@ v2021.11.06
 - Update kc2_security_password_get_token request
 
 v2021.11.26
+- Handle TrueCaptcha service exception
 - Adjust TrueCaptcha constraint parameters for high availability.
   Plus, the CAPTCHA of EUserv is currently case-insensitive, so the above adjustment works.
+
+v2021.12.15
+- Implemented a simple localization system, log output localization
+- Reformat code via black
 
 """
 
@@ -44,9 +49,11 @@ from smtplib import SMTP_SSL, SMTPDataError
 import requests
 from bs4 import BeautifulSoup
 
-# 多个账户请使用空格隔开
-USERNAME = os.environ["USERNAME"]  # 用户名或邮箱
-PASSWORD = os.environ["PASSWORD"]  # 密码
+# Please use one space to separate multiple accounts
+# euserv username or email
+USERNAME = os.environ["USERNAME"]
+# euserv password
+PASSWORD = os.environ["PASSWORD"]
 
 # default value is TrueCaptcha demo credential,
 # you can use your own credential via set environment variables:
@@ -61,26 +68,33 @@ PASSWORD = os.environ["PASSWORD"]  # 密码
 TRUECAPTCHA_USERID = os.environ.get("TRUECAPTCHA_USERID", "arun56")
 TRUECAPTCHA_APIKEY = os.environ.get("TRUECAPTCHA_APIKEY", "wMjXmBIcHcdYqO2RrsVN")
 
-# Extract key data from your emails, automatically. https://mailparser.io 
+# Extract key data from your emails, automatically. https://mailparser.io
 # 30 Emails/Month, 10 inboxes and unlimited downloads for free.
-# 多个mailparser下载链接id请使用空格隔开, 顺序与 EUserv 账号/邮箱一一对应
+# Please use one space to separate multiple mailparser download link ids,
+# in order to correspond to the EUserv account/email.
 MAILPARSER_DOWNLOAD_URL_ID = os.environ["MAILPARSER_DOWNLOAD_URL_ID"]
-# mailparser.io parsed data download base url
+# mailparser parsed data download base url
 MAILPARSER_DOWNLOAD_BASE_URL = "https://files.mailparser.io/d/"
 
 # Telegram Bot Push https://core.telegram.org/bots/api#authorizing-your-bot
-TG_BOT_TOKEN = ""  # 通过 @BotFather 申请获得，示例：1077xxx4424:AAFjv0FcqxxxxxxgEMGfi22B4yh15R5uw
-TG_USER_ID = ""  # 用户、群组或频道 ID，示例：129xxx206
-TG_API_HOST = "https://api.telegram.org"  # 自建 API 反代地址，供网络环境无法访问时使用，网络正常则保持默认
+# Obtained via @BotFather application, for example: 1077xxx4424:AAFjv0FcqxxxxxxgEMGfi22B4yh15R5uw
+TG_BOT_TOKEN = ""
+# User, group or channel ID, for example: 129xxx206
+TG_USER_ID = ""
+# Build your own API reverse proxy address for use when the network environment is inaccessible,
+# and keep the default if the network is normal.
+TG_API_HOST = "https://api.telegram.org"
 
-# Email notification
+# Email notification via yandex service, you can modify yourself to use other email service notifications.
 RECEIVER_EMAIL = os.environ.get("RECEIVER_EMAIL", "")
 YD_EMAIL = os.environ.get("YD_EMAIL", "")
-YD_APP_PWD = os.environ.get("YD_APP_PWD", "")  # yandex mail 使用第三方 APP 授权码
+# yandex mail using third party APP authorization code
+YD_APP_PWD = os.environ.get("YD_APP_PWD", "")
 
-# Server 酱(ServerChan) https://sct.ftqq.com
-# 免费额度: 每天最多发送 5 条, 卡片仅显示标题, 每天 API 最大请求 1000 次, 每分钟最多发送 5 条.
-SERVER_CHAN_SENDKEY = os.environ.get("SERVER_CHAN_SENDKEY", "")  # Server 酱的 SENDKEY，无需推送可忽略
+# Server Chan(Server 酱, name in Chinese) https://sct.ftqq.com
+# Free quota: up to 5 messages per day, cards show only title, maximum 1000 API requests per day, up to 5 messages per minute.
+# Server Chan SENDKEY, no need to push can be ignored
+SERVER_CHAN_SENDKEY = os.environ.get("SERVER_CHAN_SENDKEY", "")
 
 # Magic internet access
 PROXIES = {"http": "http://127.0.0.1:10808", "https": "http://127.0.0.1:10808"}
@@ -91,15 +105,121 @@ LOGIN_MAX_RETRY_COUNT = 5
 # Waiting time of receiving PIN, units are seconds.
 WAITING_TIME_OF_PIN = 15
 
-# options: True or False
+# Checking CAPTCHA API usage, options: True or False
 CHECK_CAPTCHA_SOLVER_USAGE = True
 
 user_agent = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/95.0.4638.69 Safari/537.36"
+    "Chrome/96.0.4664.110 Safari/537.36"
 )
 
-desp = ""  # 空值
+# Blank
+desp = ""
+
+# Simplified Chinese Translation
+chs_locale = {
+    ":": "：",
+    ",": "，",
+    ".": "。",
+    "!": "！",
+    "...": "......",
+    "~": "~",
+    "Login retried the @@@ time": "登录重试第 @@@ 次",
+    "You are using the demo apikey": "你正在使用演示版 apikey",
+    "There is no guarantee that demo apikey will work in the future": "无法保证演示版 apikey 在将来也能使用",
+    "You are using your own apikey": " 你正在使用自己的 apikey",
+    "Service Exception": "服务异常",
+    "Returned JSON": "返回的 JSON",
+    "Failed to find parsed results": "找不到解析结果",
+    "Performing CAPTCHA recognition": "进行验证码识别",
+    "The recognized CAPTCHA is": "识别的验证码是",
+    "current date": "当前日期",
+    "api usage count": "api 使用次数",
+    "CAPTCHA Verification passed": "CAPTCHA 验证通过",
+    "CAPTCHA Verification failed": "CAPTCHA 验证失败",
+    "PIN": "PIN",
+    "ServerID": "服务器 ID",
+    "Renew Failed": "续期失败",
+    "ALL Work Done": "所有工作都已完成",
+    "Enjoy": "使用愉快",
+    "EUserv Renewal Logs": "EUserv 续期日志",
+    "push failed": "推送失败",
+    "push successfully": "推送成功",
+    "Server Chan": "Server 酱",
+    "Checking": "正在检查",
+    "You have not added any accounts": "你没有添加任何账户",
+    "The number of usernames and passwords do not match": "用户名和密码的数量不匹配",
+    "The number of mailparser_dl_url_ids and usernames do not match": "mailparser 下载链接 id 和用户名的数量不匹配",
+    "Renewing the @@@ account": "正在续期第 @@@ 个账号",
+    "The @@@ account login failed": "第 @@@ 个账号登录失败",
+    "please check the login information": "请检查登录信息",
+    "renewals are being attempted": "正在尝试续期",
+    "The @@@ account is detected": "检测到第 @@@ 个账号",
+    "with @@@ VPS": "有 @@@ 台 VPS",
+    "renew Error": "续期错误",
+    "has been successfully renewed": "已成功续期",
+    "does not need to be renewed": "不需要续期",
+}
+
+# Traditional Chinese Translation
+cht_locale = {
+    ":": "：",
+    ",": "，",
+    ".": "。",
+    "!": "！",
+    "...": "......",
+    "~": "~",
+    "Login retried the @@@ time": "登錄重試第 @@@ 次",
+    "You are using the demo apikey": "你正在使用演示版 apikey",
+    "There is no guarantee that demo apikey will work in the future": "無法保證演示版 apikey 在將來也能使用",
+    "You are using your own apikey": " 你正在使用你自己的 apikey",
+    "Service Exception": "服務異常",
+    "Returned JSON": "返回的 JSON",
+    "Failed to find parsed results": "找不到解析結果",
+    "Performing CAPTCHA recognition": "進行驗證碼識別",
+    "The recognized CAPTCHA is": "識別的驗證碼是",
+    "current date": "當前日期",
+    "api usage count": "api 已使用次數",
+    "CAPTCHA Verification passed": "CAPTCHA 驗證通過",
+    "CAPTCHA Verification failed": "CAPTCHA 驗證失敗",
+    "PIN": "PIN",
+    "ServerID": "伺服器 ID",
+    "Renew Failed": "續期失敗",
+    "ALL Work Done": "所有工作都已完成",
+    "Enjoy": "使用愉快",
+    "EUserv Renewal Logs": "EUserv 續期日誌",
+    "push failed": "推送失敗",
+    "push successfully": "推送成功",
+    "Server Chan": "Server 醬",
+    "Checking": "正在檢查",
+    "You have not added any accounts": "你沒有新增任何賬戶",
+    "The number of usernames and passwords do not match": "使用者名稱和密碼的數量不匹配",
+    "The number of mailparser_dl_url_ids and usernames do not match": "mailparser 下載連結 id 和使用者名稱的數量不匹配",
+    "Renewing the @@@ account": "正在續期第 @@@ 個賬號",
+    "The @@@ account login failed": "第 @@@ 個賬號登入失敗",
+    "please check the login information": "請檢查登入資訊",
+    "renewals are being attempted": "正在嘗試續期",
+    "The @@@ account is detected": "檢測到第 @@@ 個賬號",
+    "with @@@ VPS": "有 @@@ 臺 VPS",
+    "renew Error": "續期錯誤",
+    "has been successfully renewed": "已成功續期",
+    "does not need to be renewed": "不需要續期",
+}
+
+# Localization
+log_lang_options = {
+    "en": lambda x: x,
+    "chs": lambda x: chs_locale.get(x, x),
+    "cht": lambda x: cht_locale.get(x, x),
+}
+
+# Language Options: en/chs/cht, or leave it blank
+log_lang = "chs"
+
+ordinal = lambda n: "{}{}".format(
+    n,
+    "tsnrhtdd"[(n / 10 % 10 != 1) * (n % 10 < 4) * n % 10 :: 4],
+)
 
 
 def log(info: str):
@@ -121,8 +241,14 @@ def login_retry(*args, **kwargs):
                 while number < max_retry:
                     number += 1
                     if number > 1:
-                        ordinal = lambda n: "{}{}".format(n,"tsnrhtdd"[(n/10%10!=1)*(n%10<4)*n%10::4])
-                        log(f"[EUserv] Login tried the {ordinal(number)} time.")
+                        log(
+                            "[EUserv] {} {}".format(
+                                log_lang_options.get(log_lang, lambda x: x)(
+                                    "Login retried the @@@ time"
+                                ).replace("@@@", ordinal(number)),
+                                log_lang_options.get(log_lang, lambda x: x)("."),
+                            )
+                        )
                     sess_id, session = func(username, password)
                     if sess_id != "-1":
                         return sess_id, session
@@ -144,9 +270,9 @@ def captcha_solver(captcha_image_url: str, session: requests.session) -> dict:
     -- response::
     {
         "result": "", ==> Or "result": 0
-        "conf": 0.85, 
-        "usage": 0, 
-        "requestId": "ed0006e5-69f0-4617-b698-97dc054f9022", 
+        "conf": 0.85,
+        "usage": 0,
+        "requestId": "ed0006e5-69f0-4617-b698-97dc054f9022",
         "version": "dev2"
     }
     """
@@ -154,8 +280,8 @@ def captcha_solver(captcha_image_url: str, session: requests.session) -> dict:
     encoded_string = base64.b64encode(response.content)
     url = "https://api.apitruecaptcha.org/one/gettext"
 
-    # Since "case": "mixed", "mode": "human" 
-    # can sometimes cause internal errors in the truecaptcha server. 
+    # Since "case": "mixed", "mode": "human"
+    # can sometimes cause internal errors in the truecaptcha server.
     # So a more relaxed constraint(lower/upper & default) is used here.
     # Plus, the CAPTCHA of EUserv is currently case-insensitive, so the below adjustment works.
     data = {
@@ -181,13 +307,34 @@ def handle_captcha_solved_result(solved: dict) -> str:
         solved_result = solved["result"]
         if isinstance(solved_result, str):
             if "RESULT  IS" in solved_result:
-                log("[Captcha Solver] You are using the demo apikey.")
-                print("There is no guarantee that demo apikey will work in the future!")
+                log(
+                    "[Captcha Solver] {}{}".format(
+                        log_lang_options.get(log_lang, lambda x: x)(
+                            "You are using the demo apikey"
+                        ),
+                        log_lang_options.get(log_lang, lambda x: x)("."),
+                    )
+                )
+                print(
+                    "{}{}".format(
+                        log_lang_options.get(log_lang, lambda x: x)(
+                            "There is no guarantee that demo apikey will work in the future"
+                        ),
+                        log_lang_options.get(log_lang, lambda x: x)("!"),
+                    )
+                )
                 # because using demo apikey
                 text = re.findall(r"RESULT  IS . (.*) .", solved_result)[0]
             else:
                 # using your own apikey
-                log("[Captcha Solver] You are using your own apikey.")
+                log(
+                    "[Captcha Solver] {}{}".format(
+                        log_lang_options.get(log_lang, lambda x: x)(
+                            "You are using your own apikey"
+                        ),
+                        log_lang_options.get(log_lang, lambda x: x)("."),
+                    )
+                )
                 text = solved_result
             operators = ["X", "x", "+", "-"]
             if any(x in text for x in operators):
@@ -211,12 +358,36 @@ def handle_captcha_solved_result(solved: dict) -> str:
             else:
                 return text
         else:
-            print(f"[Captcha Solver] Returned JSON: {solved}")
-            log("[Captcha Solver] Service Exception!")
+            print(
+                "[Captcha Solver] {}{} {}".format(
+                    log_lang_options.get(log_lang, lambda x: x)("Returned JSON"),
+                    log_lang_options.get(log_lang, lambda x: x)(":"),
+                    solved,
+                )
+            )
+            log(
+                "[Captcha Solver] {}{}".format(
+                    log_lang_options.get(log_lang, lambda x: x)("Service Exception"),
+                    log_lang_options.get(log_lang, lambda x: x)("!"),
+                )
+            )
             raise ValueError("[Captcha Solver] Service Exception!")
     else:
-        print(f"[Captcha Solver] Returned JSON: {solved}")
-        log("[Captcha Solver] Failed to find parsed results!")
+        print(
+            "[Captcha Solver] {}{} {}".format(
+                log_lang_options.get(log_lang, lambda x: x)("Returned JSON"),
+                log_lang_options.get(log_lang, lambda x: x)(":"),
+                solved,
+            )
+        )
+        log(
+            "[Captcha Solver] {}{}".format(
+                log_lang_options.get(log_lang, lambda x: x)(
+                    "Failed to find parsed results"
+                ),
+                log_lang_options.get(log_lang, lambda x: x)("!"),
+            )
+        )
         raise KeyError("[Captcha Solver] Failed to find parsed results!")
 
 
@@ -289,17 +460,38 @@ def login(username: str, password: str) -> (str, requests.session):
         ):
             return "-1", session
         else:
-            log("[Captcha Solver] 进行验证码识别...")
+            log(
+                "[Captcha Solver] {}{}".format(
+                    log_lang_options.get(log_lang, lambda x: x)(
+                        "Performing CAPTCHA recognition"
+                    ),
+                    log_lang_options.get(log_lang, lambda x: x)("..."),
+                )
+            )
             solved_result = captcha_solver(captcha_image_url, session)
             try:
                 captcha_code = handle_captcha_solved_result(solved_result)
-                log("[Captcha Solver] 识别的验证码是: {}".format(captcha_code))
+                log(
+                    "[Captcha Solver] {}{} {}".format(
+                        log_lang_options.get(log_lang, lambda x: x)(
+                            "The recognized CAPTCHA is"
+                        ),
+                        log_lang_options.get(log_lang, lambda x: x)(":"),
+                        captcha_code,
+                    )
+                )
 
                 if CHECK_CAPTCHA_SOLVER_USAGE:
                     usage = get_captcha_solver_usage()
                     log(
-                        "[Captcha Solver] current date {0} api usage count: {1}".format(
-                            usage[0]["date"], usage[0]["count"]
+                        "[Captcha Solver] {} {} {}{} {}".format(
+                            log_lang_options.get(log_lang, lambda x: x)("current date"),
+                            usage[0]["date"],
+                            log_lang_options.get(log_lang, lambda x: x)(
+                                "api usage count"
+                            ),
+                            log_lang_options.get(log_lang, lambda x: x)(":"),
+                            usage[0]["count"],
                         )
                     )
 
@@ -318,10 +510,22 @@ def login(username: str, password: str) -> (str, requests.session):
                     )
                     == -1
                 ):
-                    log("[Captcha Solver] 验证通过")
+                    log(
+                        "[Captcha Solver] {}".format(
+                            log_lang_options.get(log_lang, lambda x: x)(
+                                "CAPTCHA Verification passed"
+                            )
+                        )
+                    )
                     return sess_id, session
                 else:
-                    log("[Captcha Solver] 验证失败")
+                    log(
+                        "[Captcha Solver] {}".format(
+                            log_lang_options.get(log_lang, lambda x: x)(
+                                "CAPTCHA Verification failed"
+                            )
+                        )
+                    )
                     return "-1", session
             except (KeyError, ValueError):
                 return "-1", session
@@ -355,7 +559,11 @@ def get_servers(sess_id: str, session: requests.session) -> {}:
 
 
 def renew(
-    sess_id: str, session: requests.session, password: str, order_id: str, mailparser_dl_url_id: str
+    sess_id: str,
+    session: requests.session,
+    password: str,
+    order_id: str,
+    mailparser_dl_url_id: str,
 ) -> bool:
     url = "https://support.euserv.com/index.iphp"
     headers = {
@@ -398,7 +606,13 @@ def renew(
     # sleep WAITING_TIME_OF_PIN seconds waiting for mailparser email parsed PIN
     time.sleep(WAITING_TIME_OF_PIN)
     pin = get_pin_from_mailparser(mailparser_dl_url_id)
-    log(f"[MailParser] PIN: {pin}")
+    log(
+        "[MailParser] {}{} {}".format(
+            log_lang_options.get(log_lang, lambda x: x)("PIN"),
+            log_lang_options.get(log_lang, lambda x: x)(":"),
+            pin,
+        )
+    )
 
     # using PIN instead of password to get token
     data = {
@@ -426,28 +640,65 @@ def renew(
 
 
 def check(sess_id: str, session: requests.session):
-    print("Checking.......")
+    print(
+        "{}{}".format(
+            log_lang_options.get(log_lang, lambda x: x)("Checking"),
+            log_lang_options.get(log_lang, lambda x: x)("..."),
+        )
+    )
     d = get_servers(sess_id, session)
     flag = True
     for key, val in d.items():
         if val:
             flag = False
-            log("[EUserv] ServerID: %s Renew Failed!" % key)
+            log(
+                "[EUserv] {}{} {} {}{}".format(
+                    log_lang_options.get(log_lang, lambda x: x)("ServerID"),
+                    log_lang_options.get(log_lang, lambda x: x)(":"),
+                    key,
+                    log_lang_options.get(log_lang, lambda x: x)("Renew Failed"),
+                    log_lang_options.get(log_lang, lambda x: x)("!"),
+                )
+            )
 
     if flag:
-        log("[EUserv] ALL Work Done! Enjoy~")
+        log(
+            "[EUserv] {}{} {}{}".format(
+                log_lang_options.get(log_lang, lambda x: x)("ALL Work Done"),
+                log_lang_options.get(log_lang, lambda x: x)("!"),
+                log_lang_options.get(log_lang, lambda x: x)("Enjoy"),
+                log_lang_options.get(log_lang, lambda x: x)("~"),
+            )
+        )
 
 
 # Telegram Bot Push https://core.telegram.org/bots/api#authorizing-your-bot
 def telegram():
-    data = (("chat_id", TG_USER_ID), ("text", "EUserv续费日志\n\n" + desp))
+    data = (
+        ("chat_id", TG_USER_ID),
+        (
+            "text",
+            "{}\n\n".format(
+                log_lang_options.get(log_lang, lambda x: x)("EUserv Renewal Logs")
+            )
+            + desp,
+        ),
+    )
     response = requests.post(
         TG_API_HOST + "/bot" + TG_BOT_TOKEN + "/sendMessage", data=data
     )
     if response.status_code != 200:
-        print("Telegram Bot 推送失败")
+        print(
+            "Telegram Bot {}".format(
+                log_lang_options.get(log_lang, lambda x: x)("push failed")
+            )
+        )
     else:
-        print("Telegram Bot 推送成功")
+        print(
+            "Telegram Bot {}".format(
+                log_lang_options.get(log_lang, lambda x: x)("push successfully")
+            )
+        )
 
 
 # Yandex mail notification
@@ -480,63 +731,181 @@ def send_mail_by_yandex(
 
 # eMail push
 def email():
-    msg = "EUserv 续费日志\n\n" + desp
+    msg = (
+        "{}\n\n".format(
+            log_lang_options.get(log_lang, lambda x: x)("EUserv Renewal Logs")
+        )
+        + desp
+    )
     try:
         send_mail_by_yandex(
-            RECEIVER_EMAIL, YD_EMAIL, "EUserv 续费日志", msg, None, YD_EMAIL, YD_APP_PWD
+            RECEIVER_EMAIL,
+            YD_EMAIL,
+            log_lang_options.get(log_lang, lambda x: x)("EUserv Renewal Logs"),
+            msg,
+            None,
+            YD_EMAIL,
+            YD_APP_PWD,
         )
-        print("eMail 推送成功")
+        print(
+            "eMail {}".format(
+                log_lang_options.get(log_lang, lambda x: x)("push successfully")
+            )
+        )
     except requests.exceptions.RequestException as e:
         print(str(e))
-        print("eMail 推送失败")
+        print(
+            "eMail {}".format(
+                log_lang_options.get(log_lang, lambda x: x)("push failed")
+            )
+        )
     except SMTPDataError as e1:
         print(str(e1))
-        print("eMail 推送失败")
+        print(
+            "eMail {}".format(
+                log_lang_options.get(log_lang, lambda x: x)("push failed")
+            )
+        )
 
 
-# Server酱 https://sct.ftqq.com
+# Server Chan https://sct.ftqq.com
 def server_chan():
     data = {
-        "title": "EUserv 续费日志",
-        "desp": desp
+        "title": log_lang_options.get(log_lang, lambda x: x)("EUserv Renewal Logs"),
+        "desp": desp,
     }
-    response = requests.post(f"https://sctapi.ftqq.com/{SERVER_CHAN_SENDKEY}.send", data=data)
+    response = requests.post(
+        f"https://sctapi.ftqq.com/{SERVER_CHAN_SENDKEY}.send", data=data
+    )
     if response.status_code != 200:
-        print('Server 酱推送失败')
+        print(
+            "{} {}".format(
+                log_lang_options.get(log_lang, lambda x: x)("Server Chan"),
+                log_lang_options.get(log_lang, lambda x: x)("push failed"),
+            )
+        )
     else:
-        print('Server 酱推送成功')
+        print(
+            "{} {}".format(
+                log_lang_options.get(log_lang, lambda x: x)("Server Chan"),
+                log_lang_options.get(log_lang, lambda x: x)("push successfully"),
+            )
+        )
 
 
 def main_handler(event, context):
     if not USERNAME or not PASSWORD:
-        log("[EUserv] 你没有添加任何账户")
+        log(
+            "[EUserv] {}{}".format(
+                log_lang_options.get(log_lang, lambda x: x)(
+                    "You have not added any accounts"
+                ),
+                log_lang_options.get(log_lang, lambda x: x)("."),
+            )
+        )
         exit(1)
     user_list = USERNAME.strip().split()
     passwd_list = PASSWORD.strip().split()
     mailparser_dl_url_id_list = MAILPARSER_DOWNLOAD_URL_ID.strip().split()
     if len(user_list) != len(passwd_list):
-        log("[EUserv] The number of usernames and passwords do not match!")
+        log(
+            "[EUserv] {}{}".format(
+                log_lang_options.get(log_lang, lambda x: x)(
+                    "The number of usernames and passwords do not match"
+                ),
+                log_lang_options.get(log_lang, lambda x: x)("!"),
+            )
+        )
         exit(1)
     if len(mailparser_dl_url_id_list) != len(user_list):
-        log("[Mailparser] The number of mailparser_dl_url_ids and usernames do not match!")
+        log(
+            "[Mailparser] {}{}".format(
+                log_lang_options.get(log_lang, lambda x: x)(
+                    "The number of mailparser_dl_url_ids and usernames do not match"
+                ),
+                log_lang_options.get(log_lang, lambda x: x)("!"),
+            )
+        )
         exit(1)
     for i in range(len(user_list)):
         print("*" * 30)
-        log("[EUserv] 正在续费第 %d 个账号" % (i + 1))
+        log(
+            "[EUserv] {}{}".format(
+                log_lang_options.get(log_lang, lambda x: x)(
+                    "Renewing the @@@ account"
+                ).replace("@@@", ordinal(i + 1)),
+                log_lang_options.get(log_lang, lambda x: x)("..."),
+            )
+        )
         sessid, s = login(user_list[i], passwd_list[i])
         if sessid == "-1":
-            log("[EUserv] 第 %d 个账号登陆失败，请检查登录信息" % (i + 1))
+            log(
+                "[EUserv] {}{} {}{}".format(
+                    log_lang_options.get(log_lang, lambda x: x)(
+                        "The @@@ account login failed"
+                    ).replace("@@@", ordinal(i + 1)),
+                    log_lang_options.get(log_lang, lambda x: x)(","),
+                    log_lang_options.get(log_lang, lambda x: x)(
+                        "please check the login information"
+                    ),
+                    log_lang_options.get(log_lang, lambda x: x)("."),
+                )
+            )
             continue
         SERVERS = get_servers(sessid, s)
-        log("[EUserv] 检测到第 {} 个账号有 {} 台 VPS，正在尝试续期".format(i + 1, len(SERVERS)))
+        log(
+            "[EUserv] {} {}{} {}{}".format(
+                log_lang_options.get(log_lang, lambda x: x)(
+                    "The @@@ account is detected"
+                ).replace("@@@", ordinal(i + 1)),
+                log_lang_options.get(log_lang, lambda x: x)("with @@@ VPS").replace(
+                    "@@@", str(len(SERVERS))
+                ),
+                log_lang_options.get(log_lang, lambda x: x)(","),
+                log_lang_options.get(log_lang, lambda x: x)(
+                    "renewals are being attempted"
+                ),
+                log_lang_options.get(log_lang, lambda x: x)("..."),
+            )
+        )
         for k, v in SERVERS.items():
             if v:
-                if not renew(sessid, s, passwd_list[i], k, mailparser_dl_url_id_list[i]):
-                    log("[EUserv] ServerID: %s Renew Error!" % k)
+                if not renew(
+                    sessid, s, passwd_list[i], k, mailparser_dl_url_id_list[i]
+                ):
+                    log(
+                        "[EUserv] {}{} {} {}{}".format(
+                            log_lang_options.get(log_lang, lambda x: x)("ServerID"),
+                            log_lang_options.get(log_lang, lambda x: x)(":"),
+                            k,
+                            log_lang_options.get(log_lang, lambda x: x)("renew Error"),
+                            log_lang_options.get(log_lang, lambda x: x)("!"),
+                        )
+                    )
                 else:
-                    log("[EUserv] ServerID: %s has been successfully renewed!" % k)
+                    log(
+                        "[EUserv] {}{} {} {}{}".format(
+                            log_lang_options.get(log_lang, lambda x: x)("ServerID"),
+                            log_lang_options.get(log_lang, lambda x: x)(":"),
+                            k,
+                            log_lang_options.get(log_lang, lambda x: x)(
+                                "has been successfully renewed"
+                            ),
+                            log_lang_options.get(log_lang, lambda x: x)("!"),
+                        )
+                    )
             else:
-                log("[EUserv] ServerID: %s does not need to be renewed" % k)
+                log(
+                    "[EUserv] {}{} {} {}{}".format(
+                        log_lang_options.get(log_lang, lambda x: x)("ServerID"),
+                        log_lang_options.get(log_lang, lambda x: x)(":"),
+                        k,
+                        log_lang_options.get(log_lang, lambda x: x)(
+                            "does not need to be renewed"
+                        ),
+                        log_lang_options.get(log_lang, lambda x: x)("."),
+                    )
+                )
         time.sleep(15)
         check(sessid, s)
         time.sleep(5)

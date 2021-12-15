@@ -76,15 +76,15 @@ eu_ex 是 EUserv_extend 的简写。一个 Python 脚本，可以帮你续期免
 ## 待办事项
 
 - [x] ~~验证mailparser解析的`receiver'字段，以减少恶意邮件的干扰。~~ 由于 mailparser *Inbox Settings - Email Reception*，所以不做了。
-- [ ] 开放预训练的模型，在本地，不调用第三方接口就解决验证码识别的问题。
-- [ ] 日志国际化和本地化。
+- [ ] 当验证码识别 API 失效时开放预训练的模型，在本地，不调用第三方接口就解决验证码识别的问题。
+- [x] 日志国际化和本地化。
 
 ## 鸣谢
 
 - 感谢 EUserv 提供免费的 IPv6 VPS 供我们学习。
 - 感谢 CokeMine 和其仓库贡献者为我们提供的最初 *EUserv_extend* 脚本。互联网永远不会忘记，但人们会。
 
-## Q&A
+## FAQs
 
 1. **Q**: 可以非 gmail 邮箱吗?
 
